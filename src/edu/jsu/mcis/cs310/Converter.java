@@ -77,8 +77,48 @@ public class Converter {
         String result = "{}"; // default return value; replace later!
         
         try {
-        
-            // INSERT YOUR CODE HERE
+        // Prase the CSV
+        CSVReader reader = new CSVReader(new java.io.StringReader(csvString));
+        java.util.List<String[]> rows = reader.readAll();
+
+        // Getting header row
+        String[] headings = rows.get(0);
+
+        //setting up the array
+        JsonArray prodNums = new JsonArray();
+        JsonArray colHeadings = new JsonArray();
+        JsonArray data = new JsonArray();
+
+        //add headings
+        for (String h : headings) {
+            colHeadings.add(h);
+        }
+
+        //looping to get each row of data  
+        for (int i = 1; i < rows.size(); i++) {
+            String[] row = rows.get(i);
+
+            // first column for prodnum
+            prodNums.add(row[0]);
+            
+            //episode data layering
+            JsonArray episode = new JsonArray();
+            episode.add(row[1]); //title of episode         
+            episode.add(Integer.parseInt(row[2])); //season number
+            episode.add(Integer.parseInt(row[3])); //episode number 
+            episode.add(row[4]); //stardate number                     
+            episode.add(row[5]); //airdate number                      
+            episode.add(row[6]); //remastered airdate number                    
+
+            data.add(episode);
+        }
+
+        JsonObject root = new JsonObject();
+        root.put("ProdNums", prodNums);//production number 
+        root.put("ColHeadings", colHeadings);//header
+        root.put("Data", data);//data row
+
+        result = root.toJson();
             
         }
         catch (Exception e) {
@@ -95,10 +135,45 @@ public class Converter {
         String result = ""; // default return value; replace later!
         
         try {
-            
-            // INSERT YOUR CODE HERE
-            
+        // Prase the Json
+        JsonObject root = (JsonObject) Jsoner.deserialize(jsonString);
+
+        //setting up arrays
+        JsonArray prodNums = (JsonArray) root.get("ProdNums");
+        JsonArray colHeadings = (JsonArray) root.get("ColHeadings");
+        JsonArray data = (JsonArray) root.get("Data");
+        
+        //Setting up the CSV writer
+        java.io.StringWriter writer = new java.io.StringWriter();
+        CSVWriter csvWriter = new CSVWriter(writer);
+
+       //writing the header row
+        String[] header = new String[colHeadings.size()];
+        for (int i = 0; i < colHeadings.size(); i++) {
+            header[i] = colHeadings.get(i).toString();
         }
+        csvWriter.writeNext(header);
+
+     //Writing the data rows   
+    for (int i = 0; i < data.size(); i++) {
+    JsonArray episode = (JsonArray) data.get(i);
+    String[] row = new String[episode.size() + 1];
+    row[0] = prodNums.get(i).toString();
+    for (int j = 0; j < episode.size(); j++) {if (j == 2) { 
+        int epNum = Integer.parseInt(episode.get(j).toString());
+        if (epNum < 10) {row[j + 1] = "0" + epNum;}
+        else {row[j + 1] = Integer.toString(epNum);}}
+        else {row[j + 1] = episode.get(j).toString();}
+    }
+
+    csvWriter.writeNext(row);
+}
+
+
+        csvWriter.close();
+        result = writer.toString();            
+        }
+        
         catch (Exception e) {
             e.printStackTrace();
         }
